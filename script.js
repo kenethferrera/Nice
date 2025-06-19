@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    let countdownInterval; // ✅ Fix: Declare interval variable
+
     const birthdayCards = document.querySelectorAll('.birthday-card');
     const countdownSection = document.getElementById('countdown-section');
     const birthdayCardsContainer = document.querySelector('.birthday-cards-container');
@@ -37,96 +39,79 @@ document.addEventListener('DOMContentLoaded', () => {
     const minutesSpan = document.getElementById('minutes');
     const secondsSpan = document.getElementById('seconds');
 
-    // Background Music element
     const backgroundMusic = document.getElementById('background-music');
 
-    // Add click event listener to document body
+    // Close cards if clicking outside
     document.body.addEventListener('click', (event) => {
-        // Check if click is outside any birthday card
-        const isClickOutside = !event.target.closest('.birthday-card');
-        if (isClickOutside) {
+        if (!event.target.closest('.birthday-card')) {
             deactivateAllActiveElements();
         }
     });
 
-    // Set countdown to June 20, 2025 (fixed date, does NOT reset on reload)
-    const targetDate = new Date(2025, 5, 20, 0, 0, 0); // Month is 0-indexed, so 5 for June
+    // Set target date
+    const targetDate = new Date(2025, 5, 20, 0, 0, 0); // June 20, 2025
 
-    // --- Background music volume set to -50 dB (approx. 0.00316 on 0-1 scale) ---
+    // Set initial volume
     if (backgroundMusic) {
-        backgroundMusic.volume = 0.5; // Very low volume as requested
+        backgroundMusic.volume = 0.5;
     }
 
-    // --- Attempt to play background music on first user interaction ---
-    let musicStarted = false; // Flag to ensure music plays only once
+    // Attempt to play music after interaction
+    let musicStarted = false;
     function tryPlayBackgroundMusic() {
         if (backgroundMusic && !musicStarted) {
             backgroundMusic.play().then(() => {
-                console.log("Background music started successfully on user interaction.");
-                musicStarted = true; // Set flag to true
-                // Remove the event listener after successful play to avoid redundant calls
+                musicStarted = true;
                 document.body.removeEventListener('click', tryPlayBackgroundMusic);
                 document.body.removeEventListener('touchstart', tryPlayBackgroundMusic);
             }).catch(error => {
-                console.warn("Background music play still prevented after interaction:", error);
-                // Keep the listener if it's still prevented, hoping for a stronger interaction
+                console.warn("Music autoplay failed:", error);
             });
         }
     }
 
-    // Add event listeners to the body for common user interactions
     document.body.addEventListener('click', tryPlayBackgroundMusic);
-    document.body.addEventListener('touchstart', tryPlayBackgroundMusic); // For touch devices
+    document.body.addEventListener('touchstart', tryPlayBackgroundMusic);
 
-
-    // --- Centralized function to deactivate all active elements ---
+    // Hide all cards
     function deactivateAllActiveElements() {
         birthdayCards.forEach(c => {
             c.classList.remove('active');
             const video = c.querySelector('video');
             if (video && video.tagName === 'VIDEO') {
                 video.pause();
-                video.currentTime = 0; // Reset video
+                video.currentTime = 0;
             }
         });
     }
 
-    // --- Function to switch to message mode (show cards, hide countdown) ---
+    // Switch to message view
     function switchToMessageMode() {
-        countdownSection.classList.add('hidden'); // Hide countdown
-        
-        // Show the main header and the birthday cards container
-        if (mainHeader) { 
-            mainHeader.classList.remove('hidden'); 
-        }
-        if (birthdayCardsContainer) {
-            birthdayCardsContainer.classList.remove('hidden'); 
-        }
+        countdownSection.classList.add('hidden');
+        if (mainHeader) mainHeader.classList.remove('hidden');
+        if (birthdayCardsContainer) birthdayCardsContainer.classList.remove('hidden');
 
-        // Change background music after countdown
         if (backgroundMusic) {
             backgroundMusic.src = "music/bg_birthday.mp3";
             backgroundMusic.volume = 0.2;
             backgroundMusic.load();
             backgroundMusic.play().catch(error => {
-                console.warn("bg_birthday music autoplay prevented after countdown:", error);
+                console.warn("Birthday music failed to autoplay:", error);
             });
         }
     }
 
-
+    // Countdown logic
     function updateCountdown() {
         const currentTime = new Date().getTime();
         const timeLeft = targetDate.getTime() - currentTime;
 
         if (timeLeft <= 0) {
-            // Countdown has finished or already passed
             switchToMessageMode();
             if (countdownInterval) {
                 clearInterval(countdownInterval);
             }
         } else {
-            // Countdown is still running, update display
             const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
             const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
@@ -139,31 +124,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Initial check when the page loads
+    // Initialize
     updateCountdown();
-    // Only set up interval if countdown is not yet finished
+
     if (targetDate.getTime() > new Date().getTime()) {
         countdownInterval = setInterval(updateCountdown, 1000);
     } else {
-        // If the date has passed, show the messages/cards
         switchToMessageMode();
     }
 
-
-    // Card interactivity logic
-    if (birthdayCardsContainer) { 
+    // Card click logic
+    if (birthdayCardsContainer) {
         birthdayCards.forEach(card => {
             card.addEventListener('click', () => {
                 if (!birthdayCardsContainer.classList.contains('hidden')) {
                     const wasActive = card.classList.contains('active');
-                    
-                    deactivateAllActiveElements(); // Deactivate everything first
-
-                    if (!wasActive) { // If this card was NOT active, activate it
+                    deactivateAllActiveElements();
+                    if (!wasActive) {
                         card.classList.add('active');
                         const video = card.querySelector('video');
                         if (video && video.tagName === 'VIDEO') {
-                            video.volume = 0.5; // Set video volume to 0.5 when played
+                            video.volume = 0.5;
                             video.play();
                         }
                     }
@@ -172,14 +153,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Easter Egg Wiggle Animation Every 5 Seconds
+    // Wiggle animation
     setInterval(() => {
         if (easterEgg) {
             easterEgg.classList.add('wiggle');
             setTimeout(() => {
                 easterEgg.classList.remove('wiggle');
-            }, 600); // Match animation duration
+            }, 600);
         }
     }, 5000);
-
 });
